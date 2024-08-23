@@ -23,21 +23,20 @@ This WordPress plugin provides an automatic database and media backup generator.
 
 ## Installation
 
-1. Install the package via Composer: 
+1. Install the package via Composer:
 2. Configure your environment variables in a `.env` file in your WordPress root directory:
 
-    DB_NAME=your_database_name
-   
-    DB_PASSWORD=your_database_password
-   
-    BACKUP_MAIL=your_email@example.com
-   
-    MAIL_HOST=your_smtp_host
-   
-    MAIL_USERNAME=your_smtp_username
-   
-    MAIL_PASSWORD=your_smtp_password
+   DB_NAME=your_database_name
 
+   DB_PASSWORD=your_database_password
+
+   BACKUP_MAIL=your_email@example.com
+
+   MAIL_HOST=your_smtp_host
+
+   MAIL_USERNAME=your_smtp_username
+
+   MAIL_PASSWORD=your_smtp_password
 
 ## Usage
 
@@ -58,6 +57,7 @@ This project is licensed under the MIT License.
 ## Author
 
 Alexander Huxel
+
 - Website: https://webentwicklung-huxel.de
 
 ## Support
