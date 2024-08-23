@@ -4,6 +4,6 @@
   "description": "A WordPress must-use plugin to create backups for db and media with bedrock",
   "license": "GPL-2.0-or-later",
   "require": {
-    "composer/installers": "^1.0 || ^2.0"
+    "phpmailer/phpmailer": "^6.9"
   }
 }
