@@ -165,6 +165,11 @@ add_action('backup_script_daily', function() {
     new BackupScript();
 });
 
+// allow the user to create a manual backup
+if(isset($_GET['backup']) && $_GET['backup'] === 'makemanually') {
+    new BackupScript();
+}
+
 // Clear scheduled events on plugin deactivation
 register_deactivation_hook(__FILE__, function() {
     $timestamp = wp_next_scheduled('backup_script_daily');
