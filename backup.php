@@ -32,7 +32,7 @@ class BackupScript {
         $this->mail = filter_var(env('BACKUP_MAIL'), FILTER_VALIDATE_EMAIL) ? env('BACKUP_MAIL') : "admin@webentwicklung-huxel.de";
         $this->message = "";
         $this->mysql_file = null;
-        $this->log_file = WP_CONTENT_DIR . '/backup-script-log.txt';
+        $this->log_file = WP_CONTENT_DIR . '/backup-script-log.log';
 
         $this->generateBackup();
     }
