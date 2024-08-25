@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Backup Script
  * Description: Automatic DB backup generator
- * Version: 1.3
+ * Version: 1.4
  * Author: Alexander Huxel
  * Author URI: https://webentwicklung-huxel.de
  * License: MIT License
@@ -164,6 +164,11 @@ add_action('wp', function() {
 add_action('backup_script_daily', function() {
     new BackupScript();
 });
+
+// allow the user to create a manual backup
+if(isset($_GET['backup']) && $_GET['backup'] === 'makemanually') {
+    new BackupScript();
+}
 
 // Clear scheduled events on plugin deactivation
 register_deactivation_hook(__FILE__, function() {
