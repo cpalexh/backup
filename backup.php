@@ -2,19 +2,20 @@
 /**
  * Plugin Name: Backup Script
  * Description: Automatic DB backup generator
- * Version: 1.4
+ * Version: 1.5
  * Author: Alexander Huxel
  * Author URI: https://webentwicklung-huxel.de
  * License: MIT License
  */
 
+ namespace cpalexh\backup;
+
 if (!defined('ABSPATH')) exit;
 
-use function Env\env;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
-require $_SERVER['DOCUMENT_ROOT'] . '/../vendor/autoload.php';
+if(file_exists($_SERVER['DOCUMENT_ROOT'] . '/../vendor/autoload.php')){
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/../vendor/autoload.php';
+}
 
 class BackupScript {
     private $db_name;
@@ -26,10 +27,10 @@ class BackupScript {
     private $log_file;
 
     public function __construct() {
-        $this->db_name = env('DB_NAME');
-        $this->db_passwd = env('DB_PASSWORD');
+        $this->db_name = DB_NAME;
+        $this->db_passwd = DB_PASSWORD;
         $this->backup_folder = $this->getBackupFolder();
-        $this->mail = filter_var(env('BACKUP_MAIL'), FILTER_VALIDATE_EMAIL) ? env('BACKUP_MAIL') : "admin@webentwicklung-huxel.de";
+        $this->mail = filter_var(get_option('admin_email'), FILTER_VALIDATE_EMAIL);
         $this->message = "";
         $this->mysql_file = null;
         $this->log_file = WP_CONTENT_DIR . '/backup-script-log.log';
@@ -38,7 +39,7 @@ class BackupScript {
     }
 
     private function getBackupFolder() {
-        $folder = $_SERVER['DOCUMENT_ROOT'] . '/../backups/' . date('Y-m-d') . '/';
+        $folder = wp_upload_dir()['basedir'] . '/backups/' . date('Y-m-d') . '/';
         if (!file_exists($folder)) {
             mkdir($folder, 0755, true);
         }
@@ -50,28 +51,15 @@ class BackupScript {
             $this->writeToLog("ERROR: Invalid email address provided for backup notification.");
             return;
         }
+        // Use wp_mail function to send email
+        $subject = 'DB Backup [' . date('d.m.Y H:i') . ']';
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $result = wp_mail($this->mail, $subject, $this->message, $headers);
 
-        $mail = new PHPMailer(true);
-        try {
-            $mail->isSMTP();
-            $mail->Host = env('MAIL_HOST'); 
-            $mail->SMTPAuth = true;
-            $mail->Username = env('MAIL_USERNAME');
-            $mail->Password = env('MAIL_PASSWORD');
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port = 465;
-
-            $mail->setFrom(env('BACKUP_MAIL'), 'Backup Script');
-            $mail->addAddress($this->mail);
-
-            $mail->isHTML(true); 
-            $mail->Subject = 'DB Backup [' . date('d.m.Y H:i') . ']';
-            $mail->Body = $this->message;
-
-            $mail->send();
+        if ($result) {
             $this->writeToLog("Mail sent successfully.");
-        } catch (Exception $e) {
-            $this->writeToLog("ERROR: Email could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        } else {
+            $this->writeToLog("ERROR: Email could not be sent.");
         }
     }
 
@@ -154,6 +142,9 @@ class BackupScript {
     }
 }
 
+// to ensure the wp_mail() function is available
+add_action('init', function() {
+
 // Schedule the events if they're not already scheduled
 add_action('wp', function() {
     if (!wp_next_scheduled('backup_script_daily')) {
@@ -169,9 +160,11 @@ add_action('backup_script_daily', function() {
 if(isset($_GET['backup']) && $_GET['backup'] === 'makemanually') {
     new BackupScript();
 }
+new BackupScript();
 
 // Clear scheduled events on plugin deactivation
 register_deactivation_hook(__FILE__, function() {
     $timestamp = wp_next_scheduled('backup_script_daily');
     wp_unschedule_event($timestamp, 'backup_script_daily');
+});
 });
