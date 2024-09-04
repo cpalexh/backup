@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Backup Script
  * Description: Automatic DB backup generator
- * Version: 1.5
+ * Version: 1.6
  * Author: Alexander Huxel
  * Author URI: https://webentwicklung-huxel.de
  * License: MIT License
