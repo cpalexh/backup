@@ -1,23 +1,25 @@
 <?php
+
 /**
  * Plugin Name: Backup Script
  * Description: Automatic DB backup generator
- * Version: 1.6
+ * Version: 1.6.1
  * Author: Alexander Huxel
  * Author URI: https://webentwicklung-huxel.de
  * License: MIT License
  */
 
- namespace cpalexh\backup;
+namespace cpalexh\backup;
 
 if (!defined('ABSPATH')) exit;
 
 
-if(file_exists($_SERVER['DOCUMENT_ROOT'] . '/../vendor/autoload.php')){
+if (file_exists($_SERVER['DOCUMENT_ROOT'] . '/../vendor/autoload.php')) {
     require_once $_SERVER['DOCUMENT_ROOT'] . '/../vendor/autoload.php';
 }
 
-class BackupScript {
+class BackupScript
+{
     private $db_name;
     private $db_passwd;
     private $backup_folder;
@@ -26,19 +28,21 @@ class BackupScript {
     private $mysql_file;
     private $log_file;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->db_name = DB_NAME;
         $this->db_passwd = DB_PASSWORD;
         $this->backup_folder = $this->getBackupFolder();
         $this->mail = filter_var(get_option('admin_email'), FILTER_VALIDATE_EMAIL);
         $this->message = "";
         $this->mysql_file = null;
-        $this->log_file = WP_CONTENT_DIR . '/backup-script-log.log';
+        $this->log_file = wp_upload_dir()['basedir'] . '/logs/backup-script.log';
 
         $this->generateBackup();
     }
 
-    private function getBackupFolder() {
+    private function getBackupFolder()
+    {
         $folder = wp_upload_dir()['basedir'] . '/backups/' . date('Y-m-d') . '/';
         if (!file_exists($folder)) {
             mkdir($folder, 0755, true);
@@ -46,7 +50,8 @@ class BackupScript {
         return $folder;
     }
 
-    private function sendMail() {
+    private function sendMail()
+    {
         if (!$this->mail) {
             $this->writeToLog("ERROR: Invalid email address provided for backup notification.");
             return;
@@ -63,7 +68,8 @@ class BackupScript {
         }
     }
 
-    private function getCalculatedMysqlSize($inputfile) {
+    private function getCalculatedMysqlSize($inputfile)
+    {
         $file = $inputfile . ".gz";
         $size = @filesize($file);
         if ($size === false) {
@@ -79,7 +85,8 @@ class BackupScript {
         return $mysql_size;
     }
 
-    private function generateMysqlFile() {
+    private function generateMysqlFile()
+    {
         $this->mysql_file = $this->backup_folder . "{$this->db_name}_" . date('m_d_Y') . ".sql";
 
         if (file_exists($this->mysql_file . '.gz')) {
@@ -107,7 +114,8 @@ class BackupScript {
         return true;
     }
 
-    private function backupMediaFiles() {
+    private function backupMediaFiles()
+    {
         $upload_dir = wp_upload_dir()['basedir'];
         $media_backup_file = $this->backup_folder . "media_" . date('m_d_Y') . ".tar.gz";
 
@@ -117,7 +125,8 @@ class BackupScript {
         return $media_backup_file;
     }
 
-    private function generateBackup() {
+    private function generateBackup()
+    {
         if (!$this->generateMysqlFile()) {
             $this->writeToLog("Backup generation failed.");
             return false;
@@ -135,7 +144,12 @@ class BackupScript {
         $this->sendMail();
     }
 
-    private function writeToLog($message) {
+    private function writeToLog($message)
+    {
+        if (!file_exists(wp_upload_dir()['basedir'] . '/logs')) {
+            mkdir(wp_upload_dir()['basedir'] . '/logs', 0755, true);
+        }
+
         $timestamp = date('[Y-m-d H:i:s]');
         $log_message = $timestamp . ' ' . $message . PHP_EOL;
         file_put_contents($this->log_file, $log_message, FILE_APPEND);
@@ -143,28 +157,28 @@ class BackupScript {
 }
 
 // to ensure the wp_mail() function is available
-add_action('init', function() {
+add_action('init', function () {
 
-// Schedule the events if they're not already scheduled
-add_action('wp', function() {
-    if (!wp_next_scheduled('backup_script_daily')) {
-        wp_schedule_event(time(), 'daily', 'backup_script_daily');
+    // Schedule the events if they're not already scheduled
+    add_action('wp', function () {
+        if (!wp_next_scheduled('backup_script_weekly')) {
+            wp_schedule_event(time(), 'weekly', 'backup_script_weekly');
+        }
+    });
+
+    add_action('backup_script_weekly', function () {
+        new BackupScript();
+    });
+
+    // allow the user to create a manual backup
+    if (isset($_GET['backup']) && $_GET['backup'] === 'makemanually') {
+        new BackupScript();
     }
-});
-
-add_action('backup_script_daily', function() {
     new BackupScript();
-});
 
-// allow the user to create a manual backup
-if(isset($_GET['backup']) && $_GET['backup'] === 'makemanually') {
-    new BackupScript();
-}
-new BackupScript();
-
-// Clear scheduled events on plugin deactivation
-register_deactivation_hook(__FILE__, function() {
-    $timestamp = wp_next_scheduled('backup_script_daily');
-    wp_unschedule_event($timestamp, 'backup_script_daily');
-});
+    // Clear scheduled events on plugin deactivation
+    register_deactivation_hook(__FILE__, function () {
+        $timestamp = wp_next_scheduled('backup_script_weekly');
+        wp_unschedule_event($timestamp, 'backup_script_weekly');
+    });
 });
