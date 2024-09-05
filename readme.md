@@ -16,31 +16,22 @@ This WordPress plugin provides an automatic database and media backup generator.
 
 - WordPress
 - PHP 7.2 or higher
-- Composer
-- MySQL/MariaDB
-- PHPMailer
-- php-dotenv
 
-## Installation
+## Installation (bedrock)
 
 1. Install the package via Composer:
-2. Configure your environment variables in a `.env` file in your WordPress root directory:
+2. Ensure your mail server is properly configured:
+3. Ensure the admin email is correnct:
 
-   DB_NAME=your_database_name
+## Installation (non-bedrock)
 
-   DB_PASSWORD=your_database_password
-
-   BACKUP_MAIL=your_email@example.com
-
-   MAIL_HOST=your_smtp_host
-
-   MAIL_USERNAME=your_smtp_username
-
-   MAIL_PASSWORD=your_smtp_password
+1. Move the backup.php file in your mu-plugins folder:
+2. Ensure your mail server is properly configured:
+3. Ensure the admin email is correnct:
 
 ## Usage
 
-Once installed and activated, the plugin will automatically run daily backups. You don't need to do anything else.
+Once installed and activated, the plugin will automatically run weekly backups. You don't need to do anything else.
 
 ## Customization
 
@@ -48,7 +39,7 @@ You can modify the backup schedule by editing the `wp_schedule_event` function c
 
 ## Logging
 
-The plugin logs its operations to `wp-content/backup-script-log.txt`. Check this file for detailed information about each backup run.
+The plugin logs its operations to `uploads/logs/backup-script.log`. Check this file for detailed information about each backup run.
 
 ## License
 
