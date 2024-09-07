@@ -174,7 +174,6 @@ add_action('init', function () {
     if (isset($_GET['backup']) && $_GET['backup'] === 'makemanually') {
         new BackupScript();
     }
-    new BackupScript();
 
     // Clear scheduled events on plugin deactivation
     register_deactivation_hook(__FILE__, function () {

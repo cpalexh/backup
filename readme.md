@@ -15,7 +15,7 @@ This WordPress plugin provides an automatic database and media backup generator.
 ## Requirements
 
 - WordPress
-- PHP 7.2 or higher
+- PHP 7.3 or higher
 
 ## Installation (bedrock)
 
