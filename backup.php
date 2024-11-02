@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Backup Script
  * Description: Automatic DB backup generator
- * Version: 1.6.2
+ * Version: 1.6.3
  * Author: Alexander Huxel
  * Author URI: https://webentwicklung-huxel.de
  * License: MIT License
@@ -37,7 +37,6 @@ class BackupScript
         $this->message = "";
         $this->mysql_file = null;
         $this->log_file = wp_upload_dir()['basedir'] . '/logs/backup-script.log';
-
         $this->generateBackup();
     }
 
@@ -116,13 +115,28 @@ class BackupScript
 
     private function backupMediaFiles()
     {
-        $upload_dir = wp_upload_dir()['basedir'];
-        $media_backup_file = $this->backup_folder . "media_" . date('m_d_Y') . ".tar.gz";
 
-        exec("tar -czf " . escapeshellarg($media_backup_file) . " -C " . escapeshellarg($upload_dir) . " .");
-        $this->writeToLog("Media files backed up to: $media_backup_file");
+        $dirs = wp_upload_dir()['basedir'];
+        $listOfdirs = array();
 
-        return $media_backup_file;
+        foreach (scandir($dirs) as  $dir) {
+            if (!is_numeric($dir)) continue;
+
+            $listOfdirs[] = $dir;
+        }
+
+        $backup_file = $this->backup_folder . "media_" . date('m_d_Y') . ".tar.gz";
+        $dirs_to_backup = implode(' ', array_map('escapeshellarg', $listOfdirs));
+        $command = "tar -czf " . escapeshellarg($backup_file) . " -C " . escapeshellarg($dirs) . " $dirs_to_backup";
+        exec($command, $output, $return_var);
+
+        if ($return_var === 0) {
+            $this->writeToLog("Directories backed up to: $backup_file");
+        } else {
+            $this->writeToLog("Failed to backup directories. Command output: " . implode("\n", $output));
+        }
+
+        return $backup_file;
     }
 
     private function generateBackup()
@@ -156,28 +170,36 @@ class BackupScript
     }
 }
 
-// to ensure the wp_mail() function is available
-add_action('init', function () {
-
-    // Schedule the events if they're not already scheduled
-    add_action('wp', function () {
-        if (!wp_next_scheduled('backup_script_weekly')) {
-            wp_schedule_event(time(), 'weekly', 'backup_script_weekly');
+// Main initialization function
+function initialize_backup_script()
+{
+    // Check if it's a cron job or a manual admin request
+    if (defined('DOING_CRON') && DOING_CRON) {
+        add_action('backup_script_weekly', 'cpalexh\backup\run_backup');
+    } elseif (is_admin() && current_user_can('manage_options')) {
+        if (isset($_GET['backup']) && $_GET['backup'] === 'makemanually') {
+            run_backup();
+            exit;
         }
-    });
-
-    add_action('backup_script_weekly', function () {
-        new BackupScript();
-    });
-
-    // allow the user to create a manual backup
-    if (isset($_GET['backup']) && $_GET['backup'] === 'makemanually') {
-        new BackupScript();
     }
 
-    // Clear scheduled events on plugin deactivation
-    register_deactivation_hook(__FILE__, function () {
-        $timestamp = wp_next_scheduled('backup_script_weekly');
-        wp_unschedule_event($timestamp, 'backup_script_weekly');
-    });
+    // Schedule the events if they're not already scheduled
+    if (!wp_next_scheduled('backup_script_weekly')) {
+        wp_schedule_event(time(), 'weekly', 'backup_script_weekly');
+    }
+}
+
+// Function to run the backup
+function run_backup()
+{
+    new BackupScript();
+}
+
+// Hook the initialization function to 'init'
+add_action('init', 'cpalexh\backup\initialize_backup_script');
+
+// Clear scheduled events on plugin deactivation
+register_deactivation_hook(__FILE__, function () {
+    $timestamp = wp_next_scheduled('backup_script_weekly');
+    wp_unschedule_event($timestamp, 'backup_script_weekly');
 });
